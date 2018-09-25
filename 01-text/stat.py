@@ -87,7 +87,7 @@ def print_stats_composer(stats):
   "This function prints composer mode statistics"
   ordered = collections.OrderedDict(sorted(stats.items()))
   for key, value in ordered.items():
-    print("{0}: {1}".format(key.encode(sys.stdout.encoding, errors='replace'), value))
+    print("{0}: {1}".format(key, value))
 
 
 def print_stats_century(stats):
