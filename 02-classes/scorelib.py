@@ -23,19 +23,77 @@ class Print:
     """
     self.print_id = record.get('print_id')
     self.partiture = record.get('partiture')
-    self.edition = Edition(None, None, None)
+
+    authors = []
+    for c in record.get('composers', []):
+      authors.append(Person(c.get('name'), c.get('birth'), c.get('death')))
+    
+    voices = []
+    for v in record.get('voices', []):
+      voices.append(Voice(v.get('name'), v.get('range')))
+
+    editors = []
+    for e in record.get('editors', []):
+      editors.append(Person(e.get('name'), e.get('birth'), e.get('death')))
+
+    composition = Composition(name=record.get('title'), 
+                              incipit=record.get('incipit'), 
+                              key=record.get('key'), 
+                              genre=record.get('genre'), 
+                              year=record.get('composition_year'), 
+                              voices=voices, authors=authors)
+
+    self.edition = Edition(composition, editors, record.get('edition_name'))
 
 
   def composition(self):
-  	return self.edition.composition
+    return self.edition.composition
 
 
   def format(self):
     """ 
   	Reconstructs and prints the original stanza
     """
-    print("Print Number: {0}\n"
-          "Partiture: {1}".format(self.print_id, self.partiture))
+    composers = []
+    for author in self.composition().authors:
+      composer = author.name
+      if author.born or author.died:
+        composer += " ({}--{})".format(author.born or '', author.died or '')
+      composers.append(composer)
+
+    editors = [editor.name for editor in self.edition.authors]
+
+    voices = []
+    for i, v in enumerate(self.composition().voices, 1):
+      voice = "Voice {}: ".format(i)
+      voice += v.range or ''
+      if v.range and v.name:
+        voice += ", "
+      voice += v.name or ''
+      voices.append(voice)
+
+    print("Print Number: {}\n"
+          "Composer: {}\n"
+          "Title: {}\n"
+          "Genre: {}\n"
+          "Key: {}\n"
+          "Composition Year: {}\n"
+          "Edition: {}\n"
+          "Editor: {}\n"
+          "{}\n"
+          "Partiture: {}\n"
+          "Incipit: {}\n"
+          "".format(self.print_id or '',
+                    "; ".join(composers), 
+                    self.composition().name or '', 
+                    self.composition().genre or '', 
+                    self.composition().key or '', 
+                    self.composition().year or '',
+                    self.edition.name or '',
+                    ", ".join(editors), 
+                    "\n".join(voices) or 'Voice 1: ', 
+                    self.partiture or '',
+                    self.composition().incipit or ''))
 
 
 class Person:
@@ -94,7 +152,7 @@ class Composition:
     voices (list of Voice): The voices in this composition.
     authors (list of Person): The authors of this composition.
   """
-  def __init__(self, incipit, key, genre, year, voices, authors):
+  def __init__(self, name, incipit, key, genre, year, voices, authors):
     """ 
     The constructor for Composition class. 
 
@@ -121,8 +179,8 @@ class Edition:
   This is a class representing Edition. 
     
   Attributes: 
-    composition (Composition): The composition of which this edition is.
-    authors (list of Person): The authors is this edition.
+    composition (Composition): The composition of which the edition is.
+    authors (list of Person): The authors of the edition.
     name (str): Name of the edition or None.
   """
 
@@ -131,8 +189,8 @@ class Edition:
     The constructor for Edition class. 
 
     Parameters: 
-      composition (Composition): The composition of which this edition is.
-      authors (list of Person): The authors is this edition.
+      composition (Composition): The composition of which the edition is.
+      authors (list of Person): The authors of the edition.
    		name (str): Name of the edition or None.
     """
     self.composition = composition

@@ -2,7 +2,7 @@
 import sys
 import argparse
 from os import path
-from scorelib import load
+from scorelib import load, Print
 
 def eprint(*args, **kwargs):
   "This function prints message to error output"
@@ -24,6 +24,21 @@ def parse_args():
 
 
 #script body
+d = {"print_id": 55,
+"title": "Titleee",
+"genre": "rock",
+"partiture": "yes",
+"incipit": "adsasdasd",
+"key": "keyyyy",
+"composition_year": 1897,
+"edition_name": "fakin edition",
+"editors":[ {"name": "Bach", "birth":1872, "death":1878}, {"name": "AAAk"}],
+"voices":[ {"name": "violin", "range": 'asdsa--444'}, {"name": "violin"}, {"range": "g-d3"}, {}],
+"composers":[ {"name": "Bach", "birth":1872, "death":1878}, {"name": "Kock", "death":1802}, {"name": "AAAk"}]
+}
+Print(d).format()
+exit()
+
 filename = parse_args()
 print_list = load(filename)
 for p in print_list:
