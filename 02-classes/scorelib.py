@@ -1,24 +1,23 @@
 #!/usr/bin/python3
-import sys
 import re
 
 
 class Print:
-  """ 
-  This is a class representing Print. 
-    
-  Attributes: 
+  """
+  This is a class representing Print.
+
+  Attributes:
     print_id (str): Print number.
     edition (Edition): Instance of Edition class.
     partiture (boolean): Partiture flag.
   """
   def __init__(self, record):
-    """ 
+    """
     The constructor for Print class.
 
     Constructs Print object from parsed record.
 
-    Parameters: 
+    Parameters:
 	    record (dict): Parsed record of print element.
     """
     self.print_id = record.get('print_id')
@@ -27,7 +26,7 @@ class Print:
     authors = []
     for c in record.get('composers', []):
       authors.append(Person(c.get('name'), c.get('birth'), c.get('death')))
-    
+
     voices = []
     for v in record.get('voices', []):
       voices.append(Voice(v.get('name'), v.get('range')))
@@ -36,11 +35,11 @@ class Print:
     for e in record.get('editors', []):
       editors.append(Person(e.get('name'), e.get('birth'), e.get('death')))
 
-    composition = Composition(name=record.get('title'), 
-                              incipit=record.get('incipit'), 
-                              key=record.get('key'), 
-                              genre=record.get('genre'), 
-                              year=record.get('composition_year'), 
+    composition = Composition(name=record.get('title'),
+                              incipit=record.get('incipit'),
+                              key=record.get('key'),
+                              genre=record.get('genre'),
+                              year=record.get('composition_year'),
                               voices=voices, authors=authors)
 
     self.edition = Edition(composition, editors, record.get('edition_name'))
@@ -51,7 +50,7 @@ class Print:
 
 
   def format(self):
-    """ 
+    """
   	Reconstructs and prints the original stanza
     """
     composers = []
@@ -84,54 +83,54 @@ class Print:
           "Partiture: {}\n"
           "Incipit: {}\n"
           "".format(self.print_id or '',
-                    "; ".join(composers), 
-                    self.composition().name or '', 
-                    self.composition().genre or '', 
-                    self.composition().key or '', 
+                    "; ".join(composers),
+                    self.composition().name or '',
+                    self.composition().genre or '',
+                    self.composition().key or '',
                     self.composition().year or '',
                     self.edition.name or '',
-                    ", ".join(editors), 
-                    "\n".join(voices) or 'Voice 1: ', 
+                    ", ".join(editors),
+                    "\n".join(voices) or 'Voice 1: ',
                     self.partiture,
                     self.composition().incipit or ''))
 
 
 class Person:
-  """ 
-  This is a class representing Person. 
-    
-  Attributes: 
+  """
+  This is a class representing Person.
+
+  Attributes:
     name (str): Name of the person.
     born (int): Year of birth or None.
     died (int): Year of death or None.
   """
   def __init__(self, name, born, died):
-    """ 
-    The constructor for Person class. 
+    """
+    The constructor for Person class.
 
-    Parameters: 
+    Parameters:
 	    name (str): Name of the person.
 	    born (int): Year of birth or None.
 	    died (int): Year of death or None.
-    """  
+    """
     self.name = name
     self.born = born
     self.died = died
 
 
 class Voice:
-  """ 
-  This is a class representing Voice. 
-    
-  Attributes: 
+  """
+  This is a class representing Voice.
+
+  Attributes:
     name (str): Name of the voice or None.
     range (str): Range of the voice or None.
   """
   def __init__(self, name, range):
     """
-    The constructor for Voice class. 
+    The constructor for Voice class.
 
-    Parameters: 
+    Parameters:
 	    name (str): Name of the voice or None.
 	    range (str): Range of the voice or None.
     """
@@ -140,10 +139,10 @@ class Voice:
 
 
 class Composition:
-  """ 
-  This is a class representing Composition. 
-    
-  Attributes: 
+  """
+  This is a class representing Composition.
+
+  Attributes:
     name (str): Name of the composition or None.
     incipit (str): Incipit of the composition or None.
     key (str): The composition key or None.
@@ -153,10 +152,10 @@ class Composition:
     authors (list of Person): The authors of this composition.
   """
   def __init__(self, name, incipit, key, genre, year, voices, authors):
-    """ 
-    The constructor for Composition class. 
+    """
+    The constructor for Composition class.
 
-    Parameters: 
+    Parameters:
 	    name (str): Name of the composition or None.
 	    incipit (str): The incipit of the composition or None.
 	    key (str): The composition key or None.
@@ -175,20 +174,20 @@ class Composition:
 
 
 class Edition:
-  """ 
-  This is a class representing Edition. 
-    
-  Attributes: 
+  """
+  This is a class representing Edition.
+
+  Attributes:
     composition (Composition): The composition of which the edition is.
     authors (list of Person): The authors of the edition.
     name (str): Name of the edition or None.
   """
 
   def __init__(self, composition, authors, name):
-    """ 
-    The constructor for Edition class. 
+    """
+    The constructor for Edition class.
 
-    Parameters: 
+    Parameters:
       composition (Composition): The composition of which the edition is.
       authors (list of Person): The authors of the edition.
       name (str): Name of the edition or None.
@@ -202,7 +201,7 @@ def parse_record_line(line, record):
   """
   Parses record line to dictionary.
 
-  Parameters: 
+  Parameters:
     line (str): The record line from source file.
     record (dict): The dictionary with parsed values.
   """
@@ -335,7 +334,7 @@ def read_in_records(filename):
 
   Records are separated by empty line.
 
-  Parameters: 
+  Parameters:
     filename (str): The filename of source file.
 
   Returns:
@@ -354,15 +353,15 @@ def read_in_records(filename):
 
 
 def load(filename):
-  """ 
+  """
   Reads and parses the text file and returns a list of Print instances.
 
-  Parameters: 
+  Parameters:
     filename (str): The filename of source file.
 
   Returns:
     list of Print instances sorted by print_id
-  """ 
+  """
   records = []
   for record in read_in_records(filename):
     records.append(Print(record))

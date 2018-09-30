@@ -27,4 +27,4 @@ def parse_args():
 filename = parse_args()
 print_list = load(filename)
 for p in print_list:
-	p.format()
+  p.format()
