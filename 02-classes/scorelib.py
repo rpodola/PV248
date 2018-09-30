@@ -245,7 +245,7 @@ def parse_record_line(line, record):
   def parse_voices(line, record):
     "This function parses all voices from line"
     voice = {}
-    res = re.search(r'(?P<range>\w+--\w+),?(?P<name>.*)', line)
+    res = re.search(r'(?P<range>\w+--\w+)[,;]?(?P<name>.*)', line)
     if res:
       if res.group("name"):
         voice["name"] = res.group("name").strip()
@@ -257,6 +257,20 @@ def parse_record_line(line, record):
       record["voices"].append(voice)
     else:
       record["voices"] = [voice]
+
+  def parse_editors(line):
+    "This function parses all editors from line"
+    editors_list = []
+    editors = re.findall(r'([\w.]+,?\s{1}[\w.]+)', line)
+    if not editors:
+      editor = re.search(r'(\w+)', line)
+      if editor:
+        editors_list.append({"name": editor.group(1)})
+    else:
+      for editor in editors:
+        editors_list.append({"name": editor})
+
+    return editors_list
 
 
   pritnNr = re.match(r'^Print Number:[^\d]*(\d+).*', line)
@@ -301,7 +315,7 @@ def parse_record_line(line, record):
 
   editors = re.match(r'^Editor:(.*)', line)
   if editors:
-    record["editors"] = []
+    record["editors"] = parse_editors(editors.group(1).strip())
     return
 
   composers = re.match(r'^Composer:(.*)', line)
