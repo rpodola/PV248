@@ -364,6 +364,7 @@ def load(filename):
   """
   records = []
   for record in read_in_records(filename):
-    records.append(Print(record))
+    if record:
+      records.append(Print(record))
 
   return records
