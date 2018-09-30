@@ -211,6 +211,53 @@ def parse_record_line(line, record):
       return True
     return False
 
+  def parse_composers(line):
+    "This function parses all composers from line"
+    composers_list = []
+    composers = re.split(";", line)
+    for composer in composers:
+      item = {}
+      item["name"] = re.sub(r'[(].*[)]', '', composer).strip()
+
+      dates = re.search(r'[(](\d{4})?-?-?(\d{4})?[)]', composer)
+      if dates:
+        item["birth"] = dates.group(1)
+        item["death"] = dates.group(2)
+      else:
+        dates = re.search(r'[(]([+*])(\d{4})[)]', composer)
+        if dates:
+          if dates.group(1) == '*':
+            item["birth"] = dates.group(2)
+          else:
+            item["death"] = dates.group(2)
+        else:
+          dates = re.search(r'[(][^-]*-?-?(\d{4})[)]', composer)
+          if dates:
+            item["death"] = dates.group(1)
+          else:
+            dates = re.search(r'[(](\d{4})-?-?.*[)]', composer)
+            if dates:
+              item["birth"] = dates.group(1)
+
+      composers_list.append(item)
+    return composers_list
+
+  def parse_voices(line, record):
+    "This function parses all voices from line"
+    voice = {}
+    res = re.search(r'(?P<range>\w+--\w+),?(?P<name>.*)', line)
+    if res:
+      if res.group("name"):
+        voice["name"] = res.group("name").strip()
+      voice["range"] = res.group("range").strip()
+    else:
+      voice["name"] = line.strip()
+
+    if record.get("voices"):
+      record["voices"].append(voice)
+    else:
+      record["voices"] = [voice]
+
 
   pritnNr = re.match(r'^Print Number:[^\d]*(\d+).*', line)
   if pritnNr:
@@ -252,19 +299,19 @@ def parse_record_line(line, record):
     record["edition_name"] = edition.group(1).strip()
     return
 
-  editors= re.match(r'^Editor:(.*)', line)
+  editors = re.match(r'^Editor:(.*)', line)
   if editors:
     record["editors"] = []
     return
 
-  composers= re.match(r'^Composer:(.*)', line)
-  if editors:
-    record["composers"] = []
+  composers = re.match(r'^Composer:(.*)', line)
+  if composers:
+    record["composers"] = parse_composers(composers.group(1).strip())
     return
 
-  voices= re.match(r'^Voice \d+:(.*)', line)
+  voices = re.match(r'^Voice \d+:(.*)', line)
   if voices:
-    record["voices"] = []
+    parse_voices(voices.group(1).strip(), record)
     return
 
 
