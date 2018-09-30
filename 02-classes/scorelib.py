@@ -191,11 +191,81 @@ class Edition:
     Parameters: 
       composition (Composition): The composition of which the edition is.
       authors (list of Person): The authors of the edition.
-   		name (str): Name of the edition or None.
+      name (str): Name of the edition or None.
     """
     self.composition = composition
     self.authors = authors
     self.name = name
+
+
+def parse_record_line(line, record):
+  """
+  Parses record line to dictionary.
+
+  Parameters: 
+    line (str): The record line from source file.
+    record (dict): The dictionary with parsed values.
+  """
+  def parse_partiture(data):
+    if re.search(r'yes|true|True|Yes', data):
+      return True
+    return False
+
+
+  pritnNr = re.match(r'^Print Number:[^\d]*(\d+).*', line)
+  if pritnNr:
+    record["print_id"] = pritnNr.group(1)
+    return
+
+  partiture = re.match(r'^Partiture:(.*)', line)
+  if partiture:
+    record["partiture"] = parse_partiture(partiture.group(1))
+    return
+
+  title = re.match(r'^Title:(.*)', line)
+  if title:
+    record["title"] = title.group(1).strip()
+    return
+
+  incipit = re.match(r'^Incipit:(.*)', line)
+  if incipit:
+    record["incipit"] = incipit.group(1).strip()
+    return
+
+  key = re.match(r'^Key:(.*)', line)
+  if key:
+    record["key"] = key.group(1).strip()
+    return
+
+  genre = re.match(r'^Genre:(.*)', line)
+  if genre:
+    record["genre"] = genre.group(1).strip()
+    return
+
+  compositionYear = re.match(r'^Composition Year:.*(\d{4}).*', line)
+  if compositionYear:
+    record["composition_year"] = compositionYear.group(1)
+    return
+
+  edition = re.match(r'^Edition:(.*)', line)
+  if edition:
+    record["edition_name"] = edition.group(1).strip()
+    return
+
+  editors= re.match(r'^Editor:(.*)', line)
+  if editors:
+    record["editors"] = []
+    return
+
+  composers= re.match(r'^Composer:(.*)', line)
+  if editors:
+    record["composers"] = []
+    return
+
+  voices= re.match(r'^Voice \d+:(.*)', line)
+  if voices:
+    record["voices"] = []
+    return
 
 
 def read_in_records(filename):
@@ -207,19 +277,9 @@ def read_in_records(filename):
   Parameters: 
     filename (str): The filename of source file.
 
-	Returns:
-		dict representing parsed record
+  Returns:
+    dict representing parsed record
   """
-  def parse_partiture(data):
-    if re.search(r'yes|true|True|Yes', data):
-      return True
-    return False
-
-  def parse_partiture(data):
-    if re.search(r'yes|true|True|Yes', data):
-      return True
-    return False
-
   record = {}
   with open(filename, 'r', encoding="utf-8") as file:
     for line in file:
@@ -227,49 +287,7 @@ def read_in_records(filename):
         yield record
         record = {}
 
-      pritnNr = re.match(r'^Print Number:[^\d]*(\d+).*', line)
-      if pritnNr:
-        record["print_id"] = pritnNr.group(1)
-
-      partiture = re.match(r'^Partiture:(.*)', line)
-      if partiture:
-        record["partiture"] = parse_partiture(partiture.group(1))
-
-      title = re.match(r'^Title:(.*)', line)
-      if title:
-        record["title"] = title.group(1).strip()
-
-      incipit = re.match(r'^Incipit:(.*)', line)
-      if incipit:
-        record["incipit"] = incipit.group(1).strip()
-
-      key = re.match(r'^Key:(.*)', line)
-      if key:
-        record["key"] = key.group(1).strip()
-
-      genre = re.match(r'^Genre:(.*)', line)
-      if genre:
-        record["genre"] = genre.group(1).strip()
-
-      compositionYear = re.match(r'^Composition Year:.*(\d{4}).*', line)
-      if compositionYear:
-        record["composition_year"] = compositionYear.group(1)
-
-      edition = re.match(r'^Edition:(.*)', line)
-      if edition:
-        record["edition_name"] = edition.group(1).strip()
-
-      editors= re.match(r'^Editor:(.*)', line)
-      if editors:
-        record["editors"] = []
-
-      composers= re.match(r'^Composer:(.*)', line)
-      if editors:
-        record["composers"] = []
-
-      voices= re.match(r'^Voice \d+:(.*)', line)
-      if voices:
-        record["voices"] = []
+      parse_record_line(line, record)
 
   yield record
 
