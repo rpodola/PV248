@@ -24,10 +24,18 @@ def parse_args():
 
 
 #script body
+
+filename = parse_args()
+print_list = load(filename)
+for p in print_list:
+	p.format()
+	print("\n")
+
+exit()
 d = {"print_id": 55,
 "title": "Titleee",
 "genre": "rock",
-"partiture": "yes",
+"partiture": False,
 "incipit": "adsasdasd",
 "key": "keyyyy",
 "composition_year": 1897,
@@ -38,9 +46,3 @@ d = {"print_id": 55,
 }
 Print(d).format()
 exit()
-
-filename = parse_args()
-print_list = load(filename)
-for p in print_list:
-	p.format()
-	print("\n")

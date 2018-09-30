@@ -10,7 +10,7 @@ class Print:
   Attributes: 
     print_id (str): Print number.
     edition (Edition): Instance of Edition class.
-    partiture (boolean): Year of death or None.
+    partiture (boolean): Partiture flag.
   """
   def __init__(self, record):
     """ 
@@ -22,7 +22,7 @@ class Print:
 	    record (dict): Parsed record of print element.
     """
     self.print_id = record.get('print_id')
-    self.partiture = record.get('partiture')
+    self.partiture = bool(record.get('partiture', False))
 
     authors = []
     for c in record.get('composers', []):
@@ -92,7 +92,7 @@ class Print:
                     self.edition.name or '',
                     ", ".join(editors), 
                     "\n".join(voices) or 'Voice 1: ', 
-                    self.partiture or '',
+                    self.partiture,
                     self.composition().incipit or ''))
 
 
@@ -210,6 +210,16 @@ def read_in_records(filename):
 	Returns:
 		dict representing parsed record
   """
+  def parse_partiture(data):
+    if re.search(r'yes|true|True|Yes', data):
+      return True
+    return False
+
+  def parse_partiture(data):
+    if re.search(r'yes|true|True|Yes', data):
+      return True
+    return False
+
   record = {}
   with open(filename, 'r', encoding="utf-8") as file:
     for line in file:
@@ -217,9 +227,49 @@ def read_in_records(filename):
         yield record
         record = {}
 
-      pritnNr = re.match(r'^Print Number: (.*)', line)
+      pritnNr = re.match(r'^Print Number:[^\d]*(\d+).*', line)
       if pritnNr:
         record["print_id"] = pritnNr.group(1)
+
+      partiture = re.match(r'^Partiture:(.*)', line)
+      if partiture:
+        record["partiture"] = parse_partiture(partiture.group(1))
+
+      title = re.match(r'^Title:(.*)', line)
+      if title:
+        record["title"] = title.group(1).strip()
+
+      incipit = re.match(r'^Incipit:(.*)', line)
+      if incipit:
+        record["incipit"] = incipit.group(1).strip()
+
+      key = re.match(r'^Key:(.*)', line)
+      if key:
+        record["key"] = key.group(1).strip()
+
+      genre = re.match(r'^Genre:(.*)', line)
+      if genre:
+        record["genre"] = genre.group(1).strip()
+
+      compositionYear = re.match(r'^Composition Year:.*(\d{4}).*', line)
+      if compositionYear:
+        record["composition_year"] = compositionYear.group(1)
+
+      edition = re.match(r'^Edition:(.*)', line)
+      if edition:
+        record["edition_name"] = edition.group(1).strip()
+
+      editors= re.match(r'^Editor:(.*)', line)
+      if editors:
+        record["editors"] = []
+
+      composers= re.match(r'^Composer:(.*)', line)
+      if editors:
+        record["composers"] = []
+
+      voices= re.match(r'^Voice \d+:(.*)', line)
+      if voices:
+        record["voices"] = []
 
   yield record
 
