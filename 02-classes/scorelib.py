@@ -20,7 +20,11 @@ class Print:
     Parameters:
 	    record (dict): Parsed record of print element.
     """
-    self.print_id = record.get('print_id')
+    try:
+      self.print_id = int(record.get('print_id'))
+    except TypeError:
+      self.print_id = None
+
     self.partiture = bool(record.get('partiture', False))
 
     authors = []
@@ -114,8 +118,15 @@ class Person:
 	    died (int): Year of death or None.
     """
     self.name = name
-    self.born = born
-    self.died = died
+    try:
+      self.born = int(born)
+    except:
+      self.born = None
+
+    try:
+      self.died = int(died)
+    except:
+      self.died = None
 
 
 class Voice:
@@ -168,7 +179,10 @@ class Composition:
     self.incipit = incipit
     self.key = key
     self.genre = genre
-    self.year = year
+    try:
+      self.year = int(year)
+    except:
+      self.year = None
     self.voices = voices
     self.authors = authors
 
