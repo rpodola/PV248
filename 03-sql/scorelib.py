@@ -99,9 +99,14 @@ class Print:
                     self.composition().incipit or ''))
 
 
-  def _find(self, cursor):
-    SQL = "SELECT * FROM print WHERE id = ?"
-    cursor.execute(SQL, (self.print_id,))
+  def find(self, cursor):
+    """
+    Internal method that try to find equal print record in database.
+
+    Equality of print records depends on ID (Print number).
+    """
+    sql = "SELECT * FROM print WHERE id = ?"
+    cursor.execute(sql, (self.print_id,))
     row = cursor.fetchone()
 
     if row is not None:
@@ -111,14 +116,14 @@ class Print:
 
 
   def persist(self, cursor):
-    SQL = "INSERT INTO print (id, partiture, edition) VALUES (?,?,?)"
+    sql = "INSERT INTO print (id, partiture, edition) VALUES (?,?,?)"
 
-    res = self._find(cursor)
+    res = self.find(cursor)
     if res is not None:
       return res["id"]
 
     edition_id = self.edition.persist(cursor)
-    cursor.execute(SQL, (self.print_id, "Y" if self.partiture else "N", edition_id))
+    cursor.execute(sql, (self.print_id, "Y" if self.partiture else "N", edition_id))
 
     return cursor.lastrowid
 
@@ -153,9 +158,14 @@ class Person:
       self.died = None
 
 
-  def _get_by_name(self, cursor):
-    SQL = "SELECT * FROM person WHERE name = ?"
-    cursor.execute(SQL, (self.name,))
+  def get_by_name(self, cursor):
+    """
+    Internal method that try to find equal person record in database.
+
+    Equality of person records depends on name.
+    """
+    sql = "SELECT * FROM person WHERE name = ?"
+    cursor.execute(sql, (self.name,))
     row = cursor.fetchone()
 
     if row is not None:
@@ -165,14 +175,14 @@ class Person:
 
 
   def persist(self, cursor):
-    SQL = "INSERT INTO person (born, died, name) VALUES (?,?,?)"
-    SQL_UPDATE = "UPDATE person SET born = ?, died = ? WHERE id = ?"
+    sql = "INSERT INTO person (born, died, name) VALUES (?,?,?)"
+    sql_update = "UPDATE person SET born = ?, died = ? WHERE id = ?"
 
-    res = self._get_by_name(cursor)
+    res = self.get_by_name(cursor)
     if res is None:
-      cursor.execute(SQL, (self.born, self.died, self.name))
+      cursor.execute(sql, (self.born, self.died, self.name))
     elif res["born"] != self.born or res["died"] != self.died:
-      cursor.execute(SQL_UPDATE, (self.born, self.died, res["id"]))
+      cursor.execute(sql_update, (self.born, self.died, res["id"]))
       return res["id"]
     else:
       return res["id"]
@@ -201,9 +211,9 @@ class Voice:
 
 
   def persist(self, cursor, number, score):
-    SQL = "INSERT INTO voice (number, score, range, name) VALUES (?,?,?,?)"
+    sql = "INSERT INTO voice (number, score, range, name) VALUES (?,?,?,?)"
 
-    cursor.execute(SQL, (number, score, self.range, self.name))
+    cursor.execute(sql, (number, score, self.range, self.name))
 
     return cursor.lastrowid
 
@@ -246,33 +256,31 @@ class Composition:
     self.authors = authors
 
 
-  def _find(self, cursor):
-    return None
-    SQL = "SELECT * FROM voice WHERE name = ? and range = ?"
-    cursor.execute(SQL, (self.name, self.range))
-    row = cursor.fetchone()
+  def find(self, cursor):
+    """
+    Internal method that try to find equal score record in database.
 
-    if row is not None:
-      return dict_from_row(row)
-
+    Equality depends on real entities relations.
+    Equality of score records depends on attributes, voices and composers.
+    """
     return None
 
 
   def persist(self, cursor):
-    SQL = "INSERT INTO score (name, genre, key, incipit, year) VALUES (?,?,?,?,?)"
-    SQL_AUTHORS = "INSERT INTO score_author (score, composer) VALUES (?,?)"
+    sql = "INSERT INTO score (name, genre, key, incipit, year) VALUES (?,?,?,?,?)"
+    sql_authors = "INSERT INTO score_author (score, composer) VALUES (?,?)"
 
-    if self._find(cursor) is not None:
+    if self.find(cursor) is not None:
       return cursor.lastrowid
 
     #persist score
-    cursor.execute(SQL, (self.name, self.genre, self.key, self.incipit, self.year))
+    cursor.execute(sql, (self.name, self.genre, self.key, self.incipit, self.year))
     score_id = cursor.lastrowid
 
     #persist score-author relationships
     for auth in self.authors:
       person_id = auth.persist(cursor)
-      cursor.execute(SQL_AUTHORS, (score_id, person_id))
+      cursor.execute(sql_authors, (score_id, person_id))
 
     #persist voices
     for idx, voice in enumerate(self.voices):
@@ -305,10 +313,16 @@ class Edition:
     self.name = name
 
 
-  def _find(self, cursor):
+  def find(self, cursor):
+    """
+    Internal method that try to find equal edition record in database.
+
+    Equality depends on real entities relations.
+    Equality of edition records depends on name, score and editors.
+    """
     return None
-    SQL = "SELECT * FROM voice WHERE name = ? and range = ?"
-    cursor.execute(SQL, (self.name, self.range))
+    sql = "SELECT * FROM voice WHERE name = ? and range = ?"
+    cursor.execute(sql, (self.name, self.range))
     row = cursor.fetchone()
 
     if row is not None:
@@ -318,23 +332,23 @@ class Edition:
 
 
   def persist(self, cursor):
-    SQL = "INSERT INTO edition (score, name, year) VALUES (?,?,null)"
-    SQL_EDITORS = "INSERT INTO edition_author (edition, editor) VALUES (?,?)"
+    sql = "INSERT INTO edition (score, name, year) VALUES (?,?,null)"
+    sql_editors = "INSERT INTO edition_author (edition, editor) VALUES (?,?)"
 
-    if self._find(cursor) is not None:
+    if self.find(cursor) is not None:
       return cursor.lastrowid
 
     #persist composition
     score_id = self.composition.persist(cursor)
 
     #persist edition
-    cursor.execute(SQL, (score_id, self.name))
+    cursor.execute(sql, (score_id, self.name))
     edition_id = cursor.lastrowid
 
     #persist edition-author relationships
     for auth in self.authors:
       person_id = auth.persist(cursor)
-      cursor.execute(SQL_EDITORS, (edition_id, person_id))
+      cursor.execute(sql_editors, (edition_id, person_id))
 
     return edition_id
 
@@ -513,4 +527,15 @@ def load(filename):
 
 
 def dict_from_row(row):
+  """
+  Helper function to create dictionary from row returned from database.
+
+  Keys for values are equal to column names in database table.
+
+  Parameters:
+    row (object): The sqlite3 row object.
+
+  Returns:
+    dict representing row
+  """
   return dict(zip(row.keys(), row))

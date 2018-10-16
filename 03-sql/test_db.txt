@@ -5,14 +5,25 @@ con = sqlite3.connect("scorelib.dat")
 con.row_factory = sqlite3.Row
 cursor = con.cursor()
 
+cursor.execute("select * from person")
+prints = [dict(row) for row in cursor.fetchall()]
+
+print(prints)
+
+
 cursor.execute("select * from print")
 prints = [dict(row) for row in cursor.fetchall()]
 
 print(prints)
 
+cursor.execute("select * from score")
+prints = [dict(row) for row in cursor.fetchall()]
+
+print(prints)
+exit()
 for p in prints:
   prnt = {}
-  prnt["partiture"] = bool(True if p["partiture"] == "Y" else False)
+  prnt["partiture"] = True if p["partiture"] == "Y" else False
   prnt["print_id"] = p["id"]
 
   cursor.execute("select * from edition where id = ?", (p["edition"],))

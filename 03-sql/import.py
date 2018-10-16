@@ -1,9 +1,13 @@
 #! python3
+
+"""
+This module creates database schema and persists parsed objects
+"""
+import os
 import sys
 import argparse
-import os
-import scorelib
 import sqlite3
+import scorelib
 
 def eprint(*args, **kwargs):
   "This function prints message to error output"
@@ -23,7 +27,7 @@ def parse_args():
     exit(2)
 
   if os.path.isfile(args.database):
-    eprint("Database file already exists")
+    eprint("Database file already exists, will be overwritten")
     try:
       os.remove(args.database)
     except OSError:
@@ -32,7 +36,7 @@ def parse_args():
   return args.filename, args.database
 
 
-def create_db_schema(db, script):
+def create_db_schema(database, script):
   "This function creates database schema from given SQL script file"
 
   if not os.path.isfile(script):
@@ -40,20 +44,20 @@ def create_db_schema(db, script):
     exit(2)
 
   with open(script, "r") as script_file:
-    con = sqlite3.connect(db)
+    con = sqlite3.connect(database)
     cur = con.cursor()
     cur.executescript(script_file.read())
     con.commit()
 
 
-def persist_objects(db, list):
+def persist_objects(database, lst):
   "This function persists objects in the given list"
 
-  con = sqlite3.connect(db)
+  con = sqlite3.connect(database)
   con.row_factory = sqlite3.Row
   cur = con.cursor()
 
-  for obj in list:
+  for obj in lst:
     obj.persist(cur)
     con.commit()
 
@@ -68,6 +72,7 @@ FILENAME, DB = parse_args()
 #create db schema
 create_db_schema(DB, DB_SCHEMA_SCRIPT)
 #load print objects from text file
-print_list = scorelib.load(FILENAME)
+PRINT_LIST = scorelib.load(FILENAME)
 #persist objects
-persist_objects(DB, print_list[:5])
+#TODO
+persist_objects(DB, PRINT_LIST)
