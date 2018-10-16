@@ -263,15 +263,49 @@ class Composition:
     Equality depends on real entities relations.
     Equality of score records depends on attributes, voices and composers.
     """
-    return None
+    sql = ("SELECT * FROM score WHERE name = ? and incipit = ? and key = ? "
+          "and genre = ? and year = ?")
+    cursor.execute(sql, (self.name, self.incipit, self.key, self.genre, self.year))
+    score = cursor.fetchone()
+
+    if score is None:
+      return None
+    score = dict_from_row(score)
+
+    #check for the same voices
+    sql_voice = "SELECT * FROM voice WHERE score = ? ORDER BY number"
+    cursor.execute(sql_voice, (score["id"],))
+    voices = cursor.fetchall()
+    if len(self.voices) != len(voices):
+      return None
+    for idx, v in enumerate([dict_from_row(voice) for voice in voices]):
+      if v["range"] != self.voices[idx].range:
+        return None
+      if v["name"] != self.voices[idx].name:
+        return None
+
+    #check for the same authors
+    sql_voice = ("SELECT p.name FROM score_author sa join person p on (sa.composer = p.id) "
+                 "WHERE sa.score = ?")
+    cursor.execute(sql_voice, (score["id"],))
+    author_names = [dict_from_row(a)["name"] for a in cursor.fetchall()]
+    if len(self.authors) != len(author_names):
+      return None
+    if len(author_names) > 0:
+      for auth in self.authors:
+        if auth.name not in author_names:
+          return None
+
+    return score
 
 
   def persist(self, cursor):
     sql = "INSERT INTO score (name, genre, key, incipit, year) VALUES (?,?,?,?,?)"
     sql_authors = "INSERT INTO score_author (score, composer) VALUES (?,?)"
 
-    if self.find(cursor) is not None:
-      return cursor.lastrowid
+    res = self.find(cursor)
+    if res is not None:
+      return res["id"]
 
     #persist score
     cursor.execute(sql, (self.name, self.genre, self.key, self.incipit, self.year))
@@ -320,23 +354,36 @@ class Edition:
     Equality depends on real entities relations.
     Equality of edition records depends on name, score and editors.
     """
-    return None
-    sql = "SELECT * FROM voice WHERE name = ? and range = ?"
-    cursor.execute(sql, (self.name, self.range))
-    row = cursor.fetchone()
+    sql = "SELECT * FROM edition WHERE name = ?"
+    cursor.execute(sql, (self.name,))
+    edition = cursor.fetchone()
 
-    if row is not None:
-      return dict_from_row(row)
+    if edition is None:
+      return None
+    edition = dict_from_row(edition)
 
-    return None
+    #check for the same authors
+    sql_voice = ("SELECT p.name FROM edition_author sa join person p on (sa.editor = p.id) "
+                 "WHERE sa.edition = ?")
+    cursor.execute(sql_voice, (edition["id"],))
+    author_names = [dict_from_row(a)["name"] for a in cursor.fetchall()]
+    if len(self.authors) != len(author_names):
+      return None
+    if len(author_names) > 0:
+      for auth in self.authors:
+        if auth.name not in author_names:
+          return None
+
+    return edition
 
 
   def persist(self, cursor):
     sql = "INSERT INTO edition (score, name, year) VALUES (?,?,null)"
     sql_editors = "INSERT INTO edition_author (edition, editor) VALUES (?,?)"
 
-    if self.find(cursor) is not None:
-      return cursor.lastrowid
+    res = self.find(cursor)
+    if res is not None:
+      return res["id"]
 
     #persist composition
     score_id = self.composition.persist(cursor)

@@ -16,6 +16,11 @@ prints = [dict(row) for row in cursor.fetchall()]
 
 print(prints)
 
+cursor.execute("select * from edition")
+prints = [dict(row) for row in cursor.fetchall()]
+
+print(prints)
+
 cursor.execute("select * from score")
 prints = [dict(row) for row in cursor.fetchall()]
 

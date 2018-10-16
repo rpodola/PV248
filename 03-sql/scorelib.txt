@@ -14,7 +14,7 @@ Partiture: no
 Incipit: treble 2/4 c4 d8 e8 |
 
 Print Number: 1
-Composer: Bach, Johann Sebastian (-1555); Bach, Jo
+Composer: Bach, Johann Sebastian (-1555)
 Title: Christmass Oratorio
 Genre: cantata
 Key: C 
@@ -23,6 +23,8 @@ Publication Year: 2004
 Edition: Barenreiter
 Editor: xy, asd, asd, sdfsd
 Voice 1: g-d3, violin,  part
+Voice 2: C2-c, cello, part 
+Voice 3: c-e3, cis
 Partiture: yes
 Incipit: treble 2/4 c4 d8 e8 |
 
