@@ -176,18 +176,20 @@ class Person:
 
   def persist(self, cursor):
     sql = "INSERT INTO person (born, died, name) VALUES (?,?,?)"
-    sql_update = "UPDATE person SET born = ?, died = ? WHERE id = ?"
+    sql_update_born = "UPDATE person SET born = ? WHERE id = ?"
+    sql_update_died = "UPDATE person SET died = ? WHERE id = ?"
 
     res = self.get_by_name(cursor)
     if res is None:
       cursor.execute(sql, (self.born, self.died, self.name))
-    elif res["born"] != self.born or res["died"] != self.died:
-      cursor.execute(sql_update, (self.born, self.died, res["id"]))
-      return res["id"]
+      return cursor.lastrowid
     else:
+      if res["born"] != self.born and self.born is not None:
+        cursor.execute(sql_update_born, (self.born, res["id"]))
+      if res["died"] != self.died and self.died is not None:
+        cursor.execute(sql_update_died, (self.died, res["id"]))
       return res["id"]
 
-    return cursor.lastrowid
 
 
 class Voice:
