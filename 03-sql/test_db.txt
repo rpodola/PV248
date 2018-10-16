@@ -1,0 +1,55 @@
+import sqlite3
+import scorelib
+
+con = sqlite3.connect("scorelib.dat")
+con.row_factory = sqlite3.Row
+cursor = con.cursor()
+
+cursor.execute("select * from print")
+prints = [dict(row) for row in cursor.fetchall()]
+
+print(prints)
+
+for p in prints:
+  prnt = {}
+  prnt["partiture"] = bool(True if p["partiture"] == "Y" else False)
+  prnt["print_id"] = p["id"]
+
+  cursor.execute("select * from edition where id = ?", (p["edition"],))
+  edition = dict(cursor.fetchone())
+  prnt["edition_name"] = edition["name"]
+
+  cursor.execute("select * from score where id = ?", (edition["score"],))
+  score = dict(cursor.fetchone())
+  prnt["composition_year"] = score["year"]
+  prnt["genre"] = score["genre"]
+  prnt["key"] = score["key"]
+  prnt["incipit"] = score["incipit"]
+  prnt["title"] = score["name"]
+
+  cursor.execute("select p.* from person p join edition_author ea on (p.id = ea.editor) where ea.edition = ? order by id ASC", (p["edition"],))
+  editors = [dict(row) for row in cursor.fetchall()]
+  prnt["editors"] = []
+  for e in editors:
+    prnt["editors"].append({"name":e["name"], "birth":e["born"], "death":e["died"]})
+
+  cursor.execute("select p.* from person p join score_author sa on (p.id = sa.composer) where sa.score = ? order by id ASC", (edition["score"],))
+  authors = [dict(row) for row in cursor.fetchall()]
+  prnt["composers"] = []
+  for a in authors:
+    prnt["composers"].append({"name":a["name"], "birth":a["born"], "death":a["died"]})
+
+  cursor.execute("select * from voice where score = ? order by number ASC", (edition["score"],))
+  voices = [dict(row) for row in cursor.fetchall()]
+  prnt["voices"] = []
+  for v in voices:
+    prnt["voices"].append({"range":v["range"], "name":v["name"]})
+
+  p = scorelib.Print(prnt)
+  p.format()
+
+exit()
+
+"""na konci otestovat takto:
+1. zkusit ty problematické z fora
+2. vypisovat po jednom format z Print objektu a diffovat ze sestaveného Prinbt objektu z DB"""
