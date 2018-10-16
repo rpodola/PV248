@@ -74,5 +74,4 @@ create_db_schema(DB, DB_SCHEMA_SCRIPT)
 #load print objects from text file
 PRINT_LIST = scorelib.load(FILENAME)
 #persist objects
-#TODO
 persist_objects(DB, PRINT_LIST)

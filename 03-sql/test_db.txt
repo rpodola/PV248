@@ -1,32 +1,18 @@
 import sqlite3
+import difflib
 import scorelib
+
+PRINT_LIST = scorelib.load("./scorelib.txt")
+
 
 con = sqlite3.connect("scorelib.dat")
 con.row_factory = sqlite3.Row
 cursor = con.cursor()
 
-cursor.execute("select * from person")
-prints = [dict(row) for row in cursor.fetchall()]
-
-print(prints)
-
-
 cursor.execute("select * from print")
 prints = [dict(row) for row in cursor.fetchall()]
 
-print(prints)
-
-cursor.execute("select * from edition")
-prints = [dict(row) for row in cursor.fetchall()]
-
-print(prints)
-
-cursor.execute("select * from score")
-prints = [dict(row) for row in cursor.fetchall()]
-
-print(prints)
-exit()
-for p in prints:
+for idx, p in enumerate(prints):
   prnt = {}
   prnt["partiture"] = True if p["partiture"] == "Y" else False
   prnt["print_id"] = p["id"]
@@ -62,10 +48,16 @@ for p in prints:
     prnt["voices"].append({"range":v["range"], "name":v["name"]})
 
   p = scorelib.Print(prnt)
-  p.format()
+
+  print(p.format())
+  
 
 exit()
 
-"""na konci otestovat takto:
-1. zkusit ty problematické z fora
-2. vypisovat po jednom format z Print objektu a diffovat ze sestaveného Prinbt objektu z DB"""
+if p.format() != PRINT_LIST[idx].format():
+  print("different print ", (idx))
+  expected=p.format().splitlines(1)
+  actual=PRINT_LIST[idx].format().splitlines(1)
+  diff=difflib.unified_diff(expected, actual)
+
+  print(''.join(diff))

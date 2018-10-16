@@ -1,4 +1,4 @@
-Print Number: 0
+Print Number: 0 
 Composer: Bach, Johann Sebastian
 Title: Christmass Oratorio
 Genre: cantata
@@ -14,21 +14,6 @@ Partiture: no
 Incipit: treble 2/4 c4 d8 e8 |
 
 Print Number: 1
-Composer: Bach, Johann Sebastian (-1555)
-Title: Christmass Oratorio
-Genre: cantata
-Key: C 
-Composition Year: 1728 
-Publication Year: 2004
-Edition: Barenreiter
-Editor: xy, asd, asd, sdfsd
-Voice 1: g-d3, violin,  part
-Voice 2: C2-c, cello, part 
-Voice 3: c-e3, cis
-Partiture: yes
-Incipit: treble 2/4 c4 d8 e8 |
-
-Print Number: 1
 Composer: Weber, Carl Maria
 Title: Concerto for bassoon and orchestra op. 75
 Genre: solo concerto
@@ -36,9 +21,8 @@ Key: Bes
 Composition Year: 
 Publication Year:
 Edition: modern
-Editor: Зверев, В., Костлан, И. 
+Editor:
 Voice 1: Bes1--d2, bassoon, part
-Voice 2: Bes1--d2, bassoon, part
 Partiture: no
 Incipit: treble 4/4 f'2 c8. a16 f8. a16 |
 

@@ -75,7 +75,7 @@ class Print:
       voice += v.name or ''
       voices.append(voice)
 
-    print("Print Number: {}\n"
+    return ("Print Number: {}\n"
           "Composer: {}\n"
           "Title: {}\n"
           "Genre: {}\n"
@@ -373,6 +373,9 @@ class Edition:
       for auth in self.authors:
         if auth.name not in author_names:
           return None
+
+    if self.composition.find(cursor) is None:
+      return None
 
     return edition
 
