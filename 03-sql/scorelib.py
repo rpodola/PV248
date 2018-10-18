@@ -215,7 +215,7 @@ class Voice:
   def persist(self, cursor, number, score):
     sql = "INSERT INTO voice (number, score, range, name) VALUES (?,?,?,?)"
 
-    cursor.execute(sql, (number, score, self.range, self.name))
+    cursor.execute(sql, (number, score, self.range, None if self.name == "" else self.name))
 
     return cursor.lastrowid
 
