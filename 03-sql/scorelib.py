@@ -421,8 +421,10 @@ def parse_record_line(line, record):
   def parse_composers(line):
     "This function parses all composers from line"
     composers_list = []
-    composers = re.split(";", line)
+    composers = re.split(";", line.strip())
     for composer in composers:
+      if not composer:
+        continue
       item = {}
       item["name"] = re.sub(r'[(].*[)]', '', composer).strip()
 
