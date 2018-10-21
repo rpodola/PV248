@@ -220,6 +220,15 @@ class Voice:
     return cursor.lastrowid
 
 
+  def empty(self):
+    if self.name is None or self.name == "":
+      return True
+    if self.range is None or self.range == "":
+      return True
+
+    return False
+
+
 class Composition:
   """
   This is a class representing Composition.
@@ -266,39 +275,48 @@ class Composition:
     Equality of score records depends on attributes, voices and composers.
     """
     sql = ("SELECT * FROM score WHERE name = ? and incipit = ? and key = ? "
-          "and genre = ? and year = ?")
-    cursor.execute(sql, (self.name, self.incipit, self.key, self.genre, self.year))
-    score = cursor.fetchone()
+           "and genre = ?")
+    cursor.execute(sql, (self.name, self.incipit, self.key, self.genre))
+    scores = cursor.fetchall()
 
-    if score is None:
+    if scores == []:
       return None
-    score = dict_from_row(score)
 
-    #check for the same voices
-    sql_voice = "SELECT * FROM voice WHERE score = ? ORDER BY number"
-    cursor.execute(sql_voice, (score["id"],))
-    voices = cursor.fetchall()
-    if len(self.voices) != len(voices):
-      return None
-    for idx, v in enumerate([dict_from_row(voice) for voice in voices]):
-      if v["range"] != self.voices[idx].range:
-        return None
-      if v["name"] != self.voices[idx].name:
-        return None
+    for score in [dict_from_row(row) for row in scores]:
+      #check for year, not working in SQL
+      if score.get("year") != self.year:
+        continue
+      #check for the same authors
+      sql_author = ("SELECT p.name FROM score_author sa join person p on (sa.composer = p.id) "
+                   "WHERE sa.score = ?")
+      cursor.execute(sql_author, (score["id"],))
+      sql_author_names = [dict_from_row(a)["name"] for a in cursor.fetchall()]
+      author_names = [p.name for p in self.authors]
+      if not names_list_equal(author_names, sql_author_names):
+        continue
 
-    #check for the same authors
-    sql_voice = ("SELECT p.name FROM score_author sa join person p on (sa.composer = p.id) "
-                 "WHERE sa.score = ?")
-    cursor.execute(sql_voice, (score["id"],))
-    author_names = [dict_from_row(a)["name"] for a in cursor.fetchall()]
-    if len(self.authors) != len(author_names):
-      return None
-    if len(author_names) > 0:
-      for auth in self.authors:
-        if auth.name not in author_names:
-          return None
+      #check for the same voices
+      sql_voice = "SELECT * FROM voice WHERE score = ? ORDER BY number"
+      cursor.execute(sql_voice, (score["id"],))
+      voices = cursor.fetchall()
+      if len(self.voices) != len(voices):
+        continue
+      different = False
+      for idx, v in enumerate([dict_from_row(voice) for voice in voices]):
+        voice = Voice(v["name"], v["range"])
+        if voice.empty() and self.voices[idx].empty():
+          continue
+        if v["range"] != self.voices[idx].range:
+          different = True
+          continue
+        if v["name"] != self.voices[idx].name:
+          different = True
+          continue
 
-    return score
+      if not different:
+        return score
+
+    return None
 
 
   def persist(self, cursor):
@@ -358,28 +376,31 @@ class Edition:
     """
     sql = "SELECT * FROM edition WHERE name = ?"
     cursor.execute(sql, (self.name,))
-    edition = cursor.fetchone()
+    editions = cursor.fetchall()
 
-    if edition is None:
-      return None
-    edition = dict_from_row(edition)
-
-    #check for the same authors
-    sql_voice = ("SELECT p.name FROM edition_author sa join person p on (sa.editor = p.id) "
-                 "WHERE sa.edition = ?")
-    cursor.execute(sql_voice, (edition["id"],))
-    author_names = [dict_from_row(a)["name"] for a in cursor.fetchall()]
-    if len(self.authors) != len(author_names):
-      return None
-    if len(author_names) > 0:
-      for auth in self.authors:
-        if auth.name not in author_names:
-          return None
-
-    if self.composition.find(cursor) is None:
+    if editions == []:
       return None
 
-    return edition
+    for edition in [dict_from_row(e) for e in editions]:
+      #check for the same authors
+      sql_voice = ("SELECT p.name FROM edition_author sa join person p on (sa.editor = p.id) "
+                   "WHERE sa.edition = ?")
+      cursor.execute(sql_voice, (edition["id"],))
+      author_names = [dict_from_row(a)["name"] for a in cursor.fetchall()]
+      if len(self.authors) != len(author_names):
+        continue
+      if len(author_names) > 0:
+        for auth in self.authors:
+          if auth.name not in author_names:
+            continue
+
+      score = self.composition.find(cursor)
+      if score is None:
+        continue
+      if score["id"] == edition["score"]:
+        return edition
+
+    return None
 
 
   def persist(self, cursor):
@@ -451,7 +472,7 @@ def parse_record_line(line, record):
       composers_list.append(item)
     return composers_list
 
-  def parse_voices(line, record):
+  def parse_voice(line, record):
     "This function parses all voices from line"
     voice = {}
     res = re.search(r'(?P<range>\w+--\w+)[,;]?(?P<name>.*)', line)
@@ -460,7 +481,7 @@ def parse_record_line(line, record):
         voice["name"] = res.group("name").strip()
       voice["range"] = res.group("range").strip()
     else:
-      voice["name"] = line.strip()
+      voice["name"] = line
 
     if record.get("voices"):
       record["voices"].append(voice)
@@ -532,9 +553,11 @@ def parse_record_line(line, record):
     record["composers"] = parse_composers(composers.group(1).strip())
     return
 
-  voices = re.match(r'^Voice \d+:(.*)', line)
-  if voices:
-    parse_voices(voices.group(1).strip(), record)
+  voice_match = re.match(r'^Voice \d+:(.*)', line)
+  if voice_match:
+    voice = voice_match.group(1).strip()
+    if voice != "":
+      parse_voice(voice, record)
     return
 
 
@@ -593,3 +616,17 @@ def dict_from_row(row):
     dict representing row
   """
   return dict(zip(row.keys(), row))
+
+
+def names_list_equal(names1, names2):
+  if len(names1) != len(names2):
+    return False
+  names1.sort()
+  names2.sort()
+
+  for idx in range(len(names1)):
+    if names1[idx] != names2[idx]:
+      return False
+
+  return True
+
