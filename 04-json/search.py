@@ -42,28 +42,77 @@ def dict_from_row(row):
 
 
 def get_composers_id(cursor, composer):
-  """This funtion finds and return composers
-     matching given name substring
-
-     return: list of composers 
   """
-  sql_composer_match = ("select id, name from person where name like ?")
+  This funtion finds and return composers matching given name substring
+
+  Returns:
+    list of composers 
+  """
+  sql_composer_match = ("select p.id, p.name from person p "
+                        "join score_author s on s.composer = p.id "
+                        "where p.name like ?")
   
   cursor.execute(sql_composer_match, ('%'+composer+'%',))
   return [dict_from_row(row) for row in cursor.fetchall()]
 
 
 def get_print_by_composer(cursor, composer_id):
-  """Return list of Prints where composer participates
-  """
-  sql = ("select pr.id as 'Print number',* from print pr "
+  """Return list of Prints where composer participates"""
+
+  sql = ("select pr.id as 'Print Number',"
+         "pr.partiture as Partiture,"
+         "s.name as Title,"
+         "s.genre as Genre,"
+         "s.key as Key,"
+         "s.incipit as Incipit,"
+         "s.year as 'Composition Year',"
+         "e.name as 'Edition',"
+         "s.id as score_id,"
+         "e.id as edition_id "
+         "from print pr "
          "join edition e on pr.edition = e.id "
          "join score s on e.score = s.id "
          "join score_author sa on sa.score = s.id "
          "where sa.composer = ?")
 
+  sql_voices = ("select name, range "
+                "from voice "
+                "where score = ? "
+                "order by number")
+
+  sql_composer = ("select p.name, p.born, p.died "
+                 "from person p "
+                 "join score_author s on p.id = s.composer "
+                 "where s.score = ?")
+
+  sql_editor = ("select p.name, p.born, p.died "
+                "from person p "
+                "join edition_author e on p.id = e.editor "
+                "where e.edition = ?")
+
   cursor.execute(sql, (composer_id,))
-  return [dict_from_row(row) for row in cursor.fetchall()]
+  prints = [dict_from_row(row) for row in cursor.fetchall()]
+
+  for p in prints:
+    for k in p.keys():
+      if p[k] == "":
+        p[k] = None
+
+    p["Partiture"] = p["Partiture"] == "Y"
+
+    cursor.execute(sql_voices, (p["score_id"],))
+    p["Voices"] = [dict_from_row(row) for row in cursor.fetchall()]
+
+    cursor.execute(sql_composer, (p["score_id"],))
+    p["Composer"] = [dict_from_row(row) for row in cursor.fetchall()]
+
+    cursor.execute(sql_editor, (p["edition_id"],))
+    p["Editor"] = [dict_from_row(row) for row in cursor.fetchall()]
+
+    del p["score_id"]
+    del p["edition_id"]
+
+  return prints
 
 
 #script body
