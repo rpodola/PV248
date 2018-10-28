@@ -4,10 +4,10 @@
 This script solves equations given in human readable file
 """
 import sys
-import argparse
-import numpy as np
 import os
 import re
+import argparse
+import numpy as np
 
 
 def eprint(*args, **kwargs):
@@ -15,10 +15,17 @@ def eprint(*args, **kwargs):
   print(*args, file=sys.stderr, **kwargs)
 
 
+def verbose_print(*args, **kwargs):
+  "This function prints message in verbose mode"
+  if VERBOSE:
+    print(*args, file=sys.stderr, **kwargs)
+
+
 def parse_args():
   "This function parses command-line arguments and does basic checks"
   parser = argparse.ArgumentParser()
-  parser.add_argument("filename", help="File with equations to solve")
+  parser.add_argument("filename", help="File with system of equations to solve")
+  parser.add_argument("-v", action='store_true', help="Activation of verbose mode")
 
   args = parser.parse_args()
 
@@ -26,12 +33,14 @@ def parse_args():
     eprint("Filename doesn't refer to a valid file")
     exit(2)
 
-  return args.filename
+  return args.filename, args.v
 
 
 def parse_equation(line):
   """
-  output is dict, const: {"x": 0, "a": -5}
+  This function parses string of humad-readable equation
+
+  Returns: record with variables and theirs coeficients(dict), constant(int)
   """
   eqn = {}
 
@@ -52,14 +61,16 @@ def parse_equation(line):
     raise ValueError("Equation not well formated")
 
 
+FILENAME, VERBOSE = parse_args()
+
 #dict with index of all appeared variables
 variables = {}
-
-filename = parse_args()
+#list of all equations
 equations = []
-constants = []
+#list of all constants
+constants = np.array([])
 
-with open(filename, 'r', encoding='utf-8') as FILE:
+with open(FILENAME, 'r', encoding='utf-8') as FILE:
   for line in FILE:
     try:
       eqn, cnst = parse_equation(line.strip())
@@ -71,9 +82,40 @@ with open(filename, 'r', encoding='utf-8') as FILE:
       continue
 
     equations.append(eqn)
-    constants.append(cnst)
+    constants = np.append(constants, cnst)
 
-for idx, e in enumerate(equations): 
-  print(e, constants[idx])
+#filling matrix with coeficients
+matrix = np.zeros((len(equations), len(variables)))
+for idx, eqn in enumerate(equations):
+  for var, coef in eqn.items():
+    matrix[idx][variables[var]] = coef
 
-print(variables)
+for idx, e in enumerate(equations):
+  verbose_print(e, constants[idx])
+verbose_print(*variables.keys())
+verbose_print(matrix)
+
+#creating augmented matrix
+augm_matrix = np.array(np.column_stack((matrix, constants)))
+verbose_print(augm_matrix)
+
+#calculating rank of matrixes
+rank_coef = np.linalg.matrix_rank(matrix)
+verbose_print("Rank matrix: " + str(rank_coef))
+rank_augm = np.linalg.matrix_rank(augm_matrix)
+verbose_print("Rank augmented matrix: " + str(rank_augm))
+
+#equation has a solution
+if rank_augm <= rank_coef:
+  #equation has a sinle solution
+  if rank_augm == len(variables):
+    solution = np.linalg.solve(matrix, constants)
+    verbose_print("Numpy solution: ", solution)
+    singles = ["{} = {}".format(var, solution[variables[var]])
+               for var in sorted(variables.keys())]
+    print("solution: {}".format(", ".join(singles)))
+  else:
+    print("solution space dimension: " + str(len(variables) - rank_coef))
+#equation has no solution
+else:
+  print("no solution")
