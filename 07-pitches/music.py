@@ -1,16 +1,16 @@
 #! python3
 
 """
-This script analyze signal and prints its highest and lowest peak
+This script analyze signal and prints 3 largest peaks for each sliding windows in musical signature
 """
 import sys
 import os
 import argparse
 import wave
 import struct
-import numpy as np
 from math import log2, pow
 import heapq
+import numpy as np
 
 
 def eprint(*args, **kwargs):
@@ -67,7 +67,7 @@ def get_sliding_windows(audio_filename, step):
   verbose_print("Sliding step: {}".format(sliding_step))
   #split samples into sliding window arrays by window range
   #window range == frame_rate
-  windows_data = [samples[idx:idx+frame_rate] 
+  windows_data = [samples[idx:idx+frame_rate]
                   for idx in range(0, len(samples) - frame_rate, sliding_step)]
 
   return windows_data
@@ -113,8 +113,9 @@ def print_pitches(peaks, frq_A4, sliding_step):
   time_window_end = 0
   for time, peak in enumerate(peaks):
     if time > 0:
-      if (peak != peaks[time-1]):
-        print("{:.1f}-{:.1f} {}".format(time_window_start, time_window_end, " ".join(pitches)))
+      if peak != peaks[time-1]:
+        if pitches:
+          print("{:.1f}-{:.1f} {}".format(time_window_start, time_window_end, " ".join(pitches)))
 
         time_window_start = time_window_end
         pitches = [pitch(frq, frq_A4) for frq in peak]
@@ -122,12 +123,13 @@ def print_pitches(peaks, frq_A4, sliding_step):
       pitches = [pitch(frq, frq_A4) for frq in peak]
     time_window_end += sliding_step
 
-  print("{:.1f}-{:.1f} {}".format(time_window_start, time_window_end, " ".join(pitches)))
+  if pitches:
+    print("{:.1f}-{:.1f} {}".format(time_window_start, time_window_end, " ".join(pitches)))
 
 
 def pitch(frequency, frq_A4):
   def octave_to_str(pitch, octave):
-    if octave in (0,1,2):
+    if octave in (0, 1, 2):
       return pitch.title() + ',' * (2 - octave)
     else:
       return pitch + "'" * (octave - 3)
