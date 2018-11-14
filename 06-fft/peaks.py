@@ -82,7 +82,7 @@ def find_peaks(windows):
         if low_peak is None or frq < low_peak:
           low_peak = frq
 
-    return low_peak, high_peak
+  return low_peak, high_peak
 
 
 FILENAME, VERBOSE = parse_args()
