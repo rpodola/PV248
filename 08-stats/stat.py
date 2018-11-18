@@ -75,7 +75,7 @@ def print_dates(structure):
   for exc, dates in structure.items():
     for date, data in dates.items():
       if date in joined:
-        joined[date] = np.hstack([joined[date],data])
+        joined[date] += data
       else:
         joined[date] = data
 
@@ -101,7 +101,7 @@ def print_exercises(structure):
   for exc, dates in structure.items():
     for data in dates.values():
       if exc in joined:
-        joined[exc] = np.hstack([joined[exc],data])
+        joined[exc] += data
       else:
         joined[exc] = data
 
