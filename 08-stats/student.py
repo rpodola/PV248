@@ -120,10 +120,12 @@ def get_date_stats(structure):
   slope = np.linalg.lstsq(dates_array, sorted_points, rcond=None)[0].item()
   stats["regression slope"] = slope
 
-  date_20 = dt.fromordinal(START_DATE + int(20 / slope)).date()
-  date_16 = dt.fromordinal(START_DATE + int(16 / slope)).date()
-  stats["date 20"] = str(date_20)
-  stats["date 16"] = str(date_16)
+  if slope == 0.0:
+    stats["date 20"] = "inf"
+    stats["date 16"] = "inf"
+  else:
+    stats["date 20"] = str(dt.fromordinal(START_DATE + int(20 / slope)).date())
+    stats["date 16"] = str(dt.fromordinal(START_DATE + int(16 / slope)).date())
 
   return stats
 
