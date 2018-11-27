@@ -55,10 +55,8 @@ def https_request(url, type, headers, body, timeout=1):
 
     if(type == 'POST'):
       conn.request(type, '/'+path, body, headers=headers)
-    elif(type == 'GET'):
-      conn.request(type, '/'+path, headers=headers)
     else:
-      raise ValueError
+      conn.request(type, '/'+path, headers=headers)
 
     resp = conn.getresponse()
     headers = resp.getheaders()
@@ -87,15 +85,48 @@ class ForwardHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     headers = {'Content-type': 'application/json'}
     response = https_request(self._upstream, "GET", headers, None)
 
+    self._reply(response)
+
+
+  def do_POST(self):
+    try:
+      length = int(self.headers['Content-Length'])
+      json_content = json.loads(self.rfile.read(length).decode('utf-8'))
+      
+      req_type = json_content.get('type', 'GET')
+      print(req_type)
+      req_timeout = int(json_content.get('timeout', 1))
+      print(req_timeout)
+      req_url = json_content.get('url')
+      print(req_url)
+      req_headers = json_content.get('headers', {})
+      print(req_headers)
+      req_content = json_content.get('content', '')
+      print(req_content)
+
+      if(req_url is None):
+        raise ValueError
+      if(req_type == 'POST' and 'content' not in json_content.keys()):
+        raise ValueError
+      if(req_type not in ('GET', 'POST')):
+        raise ValueError
+
+      self._reply({"code":"bla"})
+      response = https_request(req_url, req_type, req_headers, req_content, timeout=req_timeout)
+
+    except ValueError:
+      response = {'code': 'invalid json'}
+
+    self._reply(response)
+
+
+  def _reply(self, response):
     json_response = bytes(json.dumps(response), 'utf-8')
+
     self.send_response(200)
     self.send_header('Content-Type', 'application/json')
     self.end_headers()
     self.wfile.write(json_response)
-
-
-  def do_POST(self):
-    pass
 
 
 def run_server(upstream, port):
