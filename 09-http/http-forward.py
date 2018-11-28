@@ -50,20 +50,22 @@ def https_request(url, type, headers, body, timeout=1):
   response = {}
   domain, path = parse_url(url)
 
+  verbose_print("type: " + type)
+  verbose_print("url: " + url)
+  verbose_print("headers: " + json.dumps(headers))
+  verbose_print("body: " + str(body))
   try:
     conn = http.client.HTTPSConnection(domain, timeout=timeout, context=ssl._create_unverified_context())
 
     if(type == 'POST'):
-      conn.request(type, '/'+path, body, headers=headers)
+      conn.request(type, '/'+path, body=body, headers=headers)
     else:
       conn.request(type, '/'+path, headers=headers)
 
     resp = conn.getresponse()
-    headers = resp.getheaders()
     data = resp.read().decode('utf-8')
 
-    #TODO
-    #response['headers'] = 
+    response['headers'] = dict(resp.getheaders())
     response['code'] = resp.status
     try:
       response['json'] = json.loads(data.replace("\n", ""))
@@ -92,17 +94,12 @@ class ForwardHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     try:
       length = int(self.headers['Content-Length'])
       json_content = json.loads(self.rfile.read(length).decode('utf-8'))
-      
+
       req_type = json_content.get('type', 'GET')
-      print(req_type)
       req_timeout = int(json_content.get('timeout', 1))
-      print(req_timeout)
       req_url = json_content.get('url')
-      print(req_url)
       req_headers = json_content.get('headers', {})
-      print(req_headers)
-      req_content = json_content.get('content', '')
-      print(req_content)
+      req_content = bytes(json_content.get('content', ''), 'utf-8')
 
       if(req_url is None):
         raise ValueError
@@ -111,7 +108,6 @@ class ForwardHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
       if(req_type not in ('GET', 'POST')):
         raise ValueError
 
-      self._reply({"code":"bla"})
       response = https_request(req_url, req_type, req_headers, req_content, timeout=req_timeout)
 
     except ValueError:
