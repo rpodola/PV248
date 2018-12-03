@@ -9,6 +9,7 @@ import json
 import http.server
 import http.client
 import ssl
+import socket
 
 
 def eprint(*args, **kwargs):
@@ -35,27 +36,35 @@ def parse_args():
 
 
 def parse_url(url):
+  http = True
   for i in ('http://', 'https://'):
     if(url.startswith(i)):
+      if(i == 'https://'):
+        http = False
       url = url.replace(i, '')
 
   url_parts = url.split('/', 1)
   if(len(url_parts) == 1):
-    url_parts.append('') 
+    url_parts.append('')
+
+  url_parts.append(http)
 
   return url_parts
 
 
 def https_request(url, type, headers, body, timeout=1):
   response = {}
-  domain, path = parse_url(url)
+  domain, path, secure = parse_url(url)
 
   verbose_print("type: " + type)
   verbose_print("url: " + url)
   verbose_print("headers: " + json.dumps(headers))
   verbose_print("body: " + str(body))
   try:
-    conn = http.client.HTTPSConnection(domain, timeout=timeout, context=ssl._create_unverified_context())
+    if(secure):
+      conn = http.client.HTTPConnection(domain, timeout=timeout)
+    else:
+      conn = http.client.HTTPSConnection(domain, timeout=timeout, context=ssl._create_unverified_context())
 
     if(type == 'POST'):
       conn.request(type, '/'+path, body=body, headers=headers)
@@ -72,8 +81,10 @@ def https_request(url, type, headers, body, timeout=1):
     except json.decoder.JSONDecodeError:
       response['content'] = data
 
-  except:
+  except socket.timeout:
     response['code'] = 'timeout'
+  except Exception as e:
+    eprint(e)
   finally:
     conn.close()
 
@@ -84,7 +95,7 @@ class ForwardHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
   _upstream = None
 
   def do_GET(self):
-    headers = {'Content-type': 'application/json'}
+    headers = {'Content-type': 'text/plain; charset=utf-8'}
     response = https_request(self._upstream, "GET", headers, None)
 
     self._reply(response)
