@@ -8,8 +8,7 @@ import argparse
 import os
 from http.server import HTTPServer, CGIHTTPRequestHandler
 from socketserver import ThreadingMixIn
-from http import HTTPStatus
-
+import http.client
 
 def eprint(*args, **kwargs):
   "This function prints message to error output"
@@ -36,20 +35,19 @@ def parse_args():
 
 class CGIHandler(CGIHTTPRequestHandler):
   _root_dir = None
+  _cgi_args = None
 
   def do_GET(self):
     self._serve_request(self._get_full_path())
 
 
   def do_POST(self):
-    length = int(self.headers.get('Content-Length', 0))
-    body = self.rfile.read(length).decode('utf-8')
-    verbose_print("POST req received with body <{}>".format(body))
-
     self._serve_request(self._get_full_path())
 
 
   def _get_full_path(self):
+    self.path, _, self._cgi_args = self.path.partition('?')
+    verbose_print(self.path + ":" + self._cgi_args)
     return os.path.normpath(self._root_dir + self.path)
 
 
@@ -64,15 +62,15 @@ class CGIHandler(CGIHTTPRequestHandler):
 
     elif(os.path.isdir(file_path)):
       verbose_print("path <{}> is dir".format(file_path))
-      self.send_error(HTTPStatus.FORBIDDEN, explain='URL points to directory'.format(file_path))
+      self.send_error(http.client.FORBIDDEN, explain='URL points to directory'.format(file_path))
     else:
       verbose_print("path <{}> does not exist".format(file_path))
-      self.send_error(HTTPStatus.NOT_FOUND, explain='path "{}" does not exist'.format(file_path))
+      self.send_error(http.client.NOT_FOUND, explain='path "{}" does not exist'.format(file_path))
 
 
   def _send_file(self, file_path):
     with open(file_path, 'rb') as file:
-      self.send_response(HTTPStatus.OK)
+      self.send_response(http.client.OK)
       self.send_header("Content-Type", 'application/octet-stream')
       self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(file_path)))
       self.send_header("Content-Length", os.path.getsize(file_path))
@@ -86,7 +84,10 @@ class CGIHandler(CGIHTTPRequestHandler):
 
   def _execute_cgi(self, file_path):
     relpath = os.path.relpath(file_path)
-    self.cgi_info = os.path.dirname(relpath), os.path.basename(relpath)
+    cgi_file = os.path.basename(relpath)
+    if(self._cgi_args):
+      cgi_file += '?' + self._cgi_args
+    self.cgi_info = os.path.dirname(relpath), cgi_file 
     self.run_cgi()
 
 
