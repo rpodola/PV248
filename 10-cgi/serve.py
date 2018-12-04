@@ -6,9 +6,9 @@ This script creates http server running on localhost on given port that forwards
 import sys
 import argparse
 import os
-from http.server import HTTPServer, BaseHTTPRequestHandler, CGIHTTPRequestHandler
+from http.server import HTTPServer, CGIHTTPRequestHandler
 from socketserver import ThreadingMixIn
-import time
+from http import HTTPStatus
 
 
 def eprint(*args, **kwargs):
@@ -38,9 +38,22 @@ class CGIHandler(CGIHTTPRequestHandler):
   _root_dir = None
 
   def do_GET(self):
-    file_path = os.path.normpath(self._root_dir + self.path)
-    verbose_print("normalizing path <{}> to <{}>".format(self._root_dir + self.path, file_path))
+    self._serve_request(self._get_full_path())
 
+
+  def do_POST(self):
+    length = int(self.headers.get('Content-Length', 0))
+    body = self.rfile.read(length).decode('utf-8')
+    verbose_print("POST req received with body <{}>".format(body))
+
+    self._serve_request(self._get_full_path())
+
+
+  def _get_full_path(self):
+    return os.path.normpath(self._root_dir + self.path)
+
+
+  def _serve_request(self, file_path):
     if(os.path.isfile(file_path)):
       verbose_print("file <{}> exists".format(file_path))
       if file_path.endswith('.cgi'):
@@ -51,46 +64,24 @@ class CGIHandler(CGIHTTPRequestHandler):
 
     elif(os.path.isdir(file_path)):
       verbose_print("path <{}> is dir".format(file_path))
+      self.send_error(HTTPStatus.FORBIDDEN, explain='URL points to directory'.format(file_path))
     else:
       verbose_print("path <{}> does not exist".format(file_path))
-      self.send_error(404, explain="path <{}> does not exist".format(file_path))
-
-
-
-  def do_POST(self):
-    try:
-      length = int(self.headers['Content-Length'])
-      json_content = json.loads(self.rfile.read(length).decode('utf-8'))
-
-      req_type = json_content.get('type', 'GET')
-      req_timeout = int(json_content.get('timeout', 1))
-      req_url = json_content.get('url')
-      req_headers = json_content.get('headers', {})
-      req_content = bytes(json_content.get('content', ''), 'utf-8')
-
-      if(req_url is None):
-        raise ValueError
-      if(req_type == 'POST' and 'content' not in json_content.keys()):
-        raise ValueError
-      if(req_type not in ('GET', 'POST')):
-        raise ValueError
-
-      response = https_request(req_url, req_type, req_headers, req_content, timeout=req_timeout)
-
-    except ValueError:
-      response = {'code': 'invalid json'}
-
-    self._reply(response)
+      self.send_error(HTTPStatus.NOT_FOUND, explain='path "{}" does not exist'.format(file_path))
 
 
   def _send_file(self, file_path):
     with open(file_path, 'rb') as file:
-      self.send_response(200)
+      self.send_response(HTTPStatus.OK)
       self.send_header("Content-Type", 'application/octet-stream')
       self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(file_path)))
       self.send_header("Content-Length", os.path.getsize(file_path))
       self.end_headers()
-      self.wfile.write(file.read())
+      while True:
+        data = file.read(1024)
+        if not data:
+          break
+        self.wfile.write(data)
 
 
   def _execute_cgi(self, file_path):
