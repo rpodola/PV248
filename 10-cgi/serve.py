@@ -69,9 +69,12 @@ class CGIHandler(CGIHTTPRequestHandler):
 
 
   def _send_file(self, file_path):
+    content_type = 'application/octet-stream'
+    if file_path.endswith('.txt'):
+      content_type = 'text/plain'
     with open(file_path, 'rb') as file:
       self.send_response(http.client.OK)
-      self.send_header("Content-Type", 'application/octet-stream')
+      self.send_header("Content-Type", content_type)
       self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(file_path)))
       self.send_header("Content-Length", os.path.getsize(file_path))
       self.end_headers()
