@@ -136,6 +136,8 @@ class TTTHandler(BaseHTTPRequestHandler):
 
     self._response_ok(reply_body)
 
+    verbose_print(game.dump_board())
+
 
   def _response_ok(self, body=None):
     self.send_response(http.client.OK)
@@ -245,6 +247,15 @@ class Game:
     if not any(0 in row for row in self._board):
       return True
     return False
+
+  def dump_board(self):
+    board_str = ""
+    for row in self._board:
+      for cel in row:
+        board_str += str(cel) + " "
+      board_str += "\n"
+
+    return board_str
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
