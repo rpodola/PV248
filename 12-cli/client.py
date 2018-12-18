@@ -145,7 +145,7 @@ class TTTClient():
   def _make_move(self, x, y):
     resp = self._http_req("play", {"game": self._game_id,
                                    "player": self._player,
-                                   "x": x, "y": y})
+                                   "x": y, "y": x})
     if( resp.get("status") == "bad" ):
       raise TTTClientException("Moved failed: "+resp.get("message", ''))
 
@@ -172,7 +172,7 @@ class TTTClient():
     elif ( winner == self._player ):
       print("you win")
     else:
-      print("you loose")
+      print("you lose")
 
 
   def _print_board(self):
