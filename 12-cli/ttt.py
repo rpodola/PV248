@@ -144,6 +144,9 @@ class TTTHandler(BaseHTTPRequestHandler):
   def _list_req(self):
     reply_body = []
     for game_id, game in self._games_manager.games.items():
+      if( self._game_args.get("games", "empty") == "empty" ):
+        if( not game.board_empty() ):
+          continue
       reply_body.append({"id": int(game_id),"name": game.name})
 
     self._response_ok(reply_body)
@@ -260,6 +263,12 @@ class Game:
     if not any(0 in row for row in self._board):
       return True
     return False
+
+  def board_empty(self):
+    for row in self._board:
+      if not all(v == 0 for v in row):
+        return False
+    return True
 
   def dump_board(self):
     board_str = ""
